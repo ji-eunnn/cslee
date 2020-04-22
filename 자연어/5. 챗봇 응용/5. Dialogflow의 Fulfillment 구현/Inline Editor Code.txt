@@ -1,0 +1,62 @@
+// See https://github.com/dialogflow/dialogflow-fulfillment-nodejs
+// for Dialogflow fulfillment library docs, samples, and to report issues
+'use strict';
+ 
+const functions = require('firebase-functions');
+const {WebhookClient} = require('dialogflow-fulfillment');
+const {Card, Suggestion} = require('dialogflow-fulfillment');
+ 
+process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
+ 
+exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
+  const agent = new WebhookClient({ request, response });
+  const parameter = request.body.queryResult.parameters;
+  console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
+  console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+ 
+  function welcome(agent) {
+    agent.add(`Welcome to my agent!`);
+  }
+ 
+  function fallback(agent) {
+    agent.add(`I didn't understand`);
+    agent.add(`I'm sorry, can you try again?`);
+  }
+
+  function pizza_info(agent) {
+    var answer;
+
+    if( parameter.pizza_type == "불고기피자" )
+    {
+        answer = '한국의 맛 불고기를 부드러운 치즈와 함께!';
+    }
+    else if( parameter.pizza_type == "페퍼로니피자" )
+    {
+        answer = '고소한 페퍼로니햄이 쫀득한 치즈위로 뜸뿍!';
+    }
+    else if( parameter.pizza_type == "포테이토피자" )
+    {
+        answer = '저칼로리 감자의 담백한 맛!';
+    }
+    
+    agent.add(answer);
+  }
+
+  function pizza_order(agent) {
+    var answer;
+
+    answer = parameter.pizza_type + '를 주문하셨습니다.';
+    answer += " '" + parameter.address + "'로 바로 배달하도록 하겠습니다.";
+    answer += ' 이용해주셔서 감사합니다.';
+    
+    agent.add(answer);
+  }
+  
+  // Run the proper function handler based on the matched Dialogflow intent name
+  let intentMap = new Map();
+  intentMap.set('Default Welcome Intent', welcome);
+  intentMap.set('Default Fallback Intent', fallback);
+  intentMap.set('pizza_info', pizza_info);
+  intentMap.set('pizza_order - custom', pizza_order);
+  agent.handleRequest(intentMap);
+});
